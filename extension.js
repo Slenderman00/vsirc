@@ -118,31 +118,29 @@ to disconnect from a server type /disconnect |
 				// Handling commands
 				//
 
-				//if user wants to join a channel
-				if(message.toString().includes("/join".toLowerCase())) {
-					//connect
-					ws.send(message)
-					var data = message.toString().split(" ")
+				if(message.toString().charAt(0) == "/") {
+					//if user wants to join a channel
+					if(message.toString().includes("/join".toLowerCase())) {
+						//connect
+						ws.send(message)
+						var data = message.toString().split(" ")
 
-					client.join(data[1]);
-					channel = data[1];
-				}
+						client.join(data[1]);
+						channel = data[1];
+					}
 
-				//if user wants to disconnect from a channel
-				if(message.toString().includes("/disconnect".toLowerCase())) {
-					//connect
-					ws.send(message)
-					client.disconnect();
-				}
+					//if user wants to disconnect from a channel
+					if(message.toString().includes("/disconnect".toLowerCase())) {
+						//connect
+						ws.send(message)
+						client.disconnect();
+					}
 
-				//if user wants a channel list
-				if(message.toString().includes("/list".toLowerCase())) {
-					client.list();
-				}
-
-				//handling everything that dosent contain a "/" 
-				// TODO: Make sure it only registers when the "/" is at the start of a sentence
-				if(!message.toString().includes("/")) {
+					//if user wants a channel list
+					if(message.toString().includes("/list".toLowerCase())) {
+						client.list();
+					}
+				} else {
 					ws.send(nick + ' => ' + channel + ': ' + message)
 					try {
 						client.say(channel, message.toString());
@@ -154,7 +152,6 @@ to disconnect from a server type /disconnect |
 		})
 	});
 }
-
 
 //returning faketerminal interface
 function getWebviewContent() {
