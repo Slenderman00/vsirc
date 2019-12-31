@@ -177,7 +177,7 @@ function getWebviewContent() {
                 position: absolute;
                 overflow-y: auto;
                 width: 100%; 
-				height: 98%;
+				height: 97%;
 				top: 0px;
 				max-width: 100%;
 				word-wrap: break-word
@@ -200,9 +200,22 @@ function getWebviewContent() {
         terminal = document.getElementById("terminal")
 
         connection.onmessage = e => {
-            terminal.innerHTML += "<p>" + e.data + "</p>"
-            terminal.scrollTop = terminal.scrollHeight;
+			message = e.data
+			var reg = /([#][a-zA-Z0-9\d\\-\\_\\.\\|\\=\\!\\+\\#\\'\\[\\]\\/]+) /g;
+			matches = message.match(reg)
+			if(Array.isArray(matches)) {
+				matches.forEach(match => {
+					message = message.replace(match, "<a href='no-javascript.html' onclick='join(\\"" + match.trim() + "\\")'>" + match.trim() + "</a> ")
+				});
+			}
+            terminal.innerHTML += "<p>" + message + "</p>"
+            terminal.scrollTop = terminal.scrollHeight
         }
+
+        function join(channel) {
+            terminali.value = "/join " + channel
+        }
+
         connection.onerror = error => {
             terminal.innerHTML += "<p>Terminal Error, please restart application</p>"
         }
@@ -232,7 +245,7 @@ function getWebviewContent() {
             }
         }
     </script>
-</html>	`;
+</html>`;
 }
 
 
