@@ -13,3 +13,14 @@ The /disconnect command can be used to leave a server.<br />
 ## TODO
 Add a shit ton of more commands
 
+## Changelog
+
+## [1.0.0]
+
+- Initial release
+- Missing a lot of features
+
+## [1.0.2]
+
+- Made channels clickable
+
