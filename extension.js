@@ -121,15 +121,18 @@ to disconnect from a server type /disconnect |
 				if(message.toString().charAt(0) == "/") {
 					//if user wants to join a channel
 					if(message.toString().includes("/join".toLowerCase())) {
-						//connect
 						ws.send(message)
+
+						//disconnecting from old channel
+						client.part(channel)
 						var data = message.toString().split(" ")
 
+						//joining new channel
 						client.join(data[1]);
 						channel = data[1];
 					}
 
-					//if user wants to disconnect from a channel
+					//if user wants to disconnect from a server
 					if(message.toString().includes("/disconnect".toLowerCase())) {
 						//connect
 						ws.send(message)

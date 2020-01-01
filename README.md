@@ -5,6 +5,7 @@ This is an extension for vscode that allows users to connect to IRC servers.
 
 ## Features
 
+Run the "Open IRC client" command to open a new irc client <br />
 The /connect command can be used to join a server.<br />
 The /disconnect command can be used to leave a server.<br /> 
 "/join #channel" allows you to join a channel<br />
