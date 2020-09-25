@@ -4,6 +4,7 @@
 	"description": "IRC for visualt studio",
 	"version": "1.0.2",
 	"publisher": "slenderman00",
+	"repository": "https://github.com/Slenderman00/vsirc",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
@@ -34,7 +35,8 @@
 		"glob": "^7.1.5",
 		"mocha": "^6.2.2",
 		"typescript": "^3.6.4",
-		"vscode-test": "^1.2.2"
+		"vscode-test": "^1.2.2",
+		"vscode": "^1.1.37"
 	},
 	"dependencies": {
 		"irc": "^0.5.2",
