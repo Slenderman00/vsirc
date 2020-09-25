@@ -32,17 +32,11 @@ function activate(context) {
 
 			//cool banner
 			ws.send(`
-██╗██████╗░░█████╗░
-██║██╔══██╗██╔══██╗
-██║██████╔╝██║░░╚═╝
-██║██╔══██╗██║░░██╗
-██║██║░░██║╚█████╔╝
-╚═╝╚═╝░░╚═╝░╚════╝░
-
---------------------------------------------
-to connect to a server type /connect IP NICK |
-to disconnect from a server type /disconnect |
---------------------------------------------
+╔══════════════════════════════════════════════╗
+║ to connect to a server type /connect IP NICK ║
+║ to disconnect from a server type /disconnect ║
+║ type /list for a channel list                ║
+╚══════════════════════════════════════════════╝
 `);
 
 
