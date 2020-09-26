@@ -27,5 +27,9 @@ Add a shit ton of more commands
 
 ## [1.0.2]
 
-- Made channels clickable
+- made channels clickable
 
+## [1.0.4]
+
+- Overhaled command system
+- Implemented more events

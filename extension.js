@@ -1,10 +1,98 @@
 const vscode = require('vscode');
 const WSS = require('ws').Server;
 const irc = require('irc');
+const { Server } = require('http');
 
-/**
+/*
  * @param {vscode.ExtensionContext} context
  */
+
+function Command(message) {
+	let arr = message.toString().split(" ");
+	arr[0] = arr[0].toLowerCase();
+	return arr; 
+}
+
+function Connect(ws, nick, ip) {
+	ws.send("Connecting to " + ip)
+	client = new irc.Client(ip, nick, {
+		channels: [], realName: "VScode IRC", stripColors: false
+	});
+
+	//when user gets registered to a new server
+	client.addListener('registered', function(message) {
+		ws.send("Connected")
+	});
+
+	//when server returns a motd
+	client.addListener('motd', function(motd) {
+		ws.send(motd)
+	});
+
+	//when server returns a topic
+	client.addListener('topic', function(channel, topic, nick, message) {
+		ws.send(nick + ' => ' + channel + ': ' + topic)
+	});
+
+	//pm
+	client.addListener('pm', function (from, message) {
+		ws.send(from + ' => ME: ' + message);
+	});
+
+	//part
+	client.addListener('part', function (channel, nick, reason, message) {
+		ws.send(nick + " left " + channel + " for: " + reason);
+	});
+
+	//quit
+	client.addListener('quit', function (channel, nick, reason, message) {
+		ws.send(nick + " left " + channel + " for: " + reason);
+	});
+
+	//quit
+	client.addListener('quit', function (channel, nick, reason, message) {
+		ws.send(nick + " was kicked from " + channel + " for: " + reason);
+	});
+
+	//when channelist starts to download
+	client.addListener('channellist_start', function(list) {
+		_channellist = Array()
+		ws.send("Downloading channellist")
+	});
+
+	//adding channelist listing to an array
+	client.addListener('channellist_item', function(listing) {
+		_channellist.push(listing);
+	});
+
+	//sorting and returning channelist when download is complete
+	client.addListener('channellist', function(list) {
+		_channellist.sort(function(a,b) {
+			return a["users"]-b["users"]
+		});
+
+		list = "";
+		_channellist.forEach(element => {
+			list += element["name"] + " : " + element["users"] + " : " + element["topic"] + "<br>"
+		});
+		ws.send(list);
+	});
+
+	//ignoring errors
+	client.addListener('error', function(message) {
+	});
+
+	//returning message
+	client.addListener('message', function (from, to, message) {
+		ws.send(from + ' => ' + to + ': ' + message);
+	});
+}
+
+	//some global vars used by the client
+	var client;
+	var channel = "";
+	var nick = "";
+	var _channellist;
 
 function activate(context) {
 
@@ -21,21 +109,16 @@ function activate(context) {
 		//starting a websocket server
 		const wss = new WSS({ port: 8080 })
 
-
-		//some global vars used by the client
-		var client;
-		var channel = "";
-		var nick = "";
-		var _channellist;
-
 		wss.on('connection', ws => {
 
-			//cool banner
-			ws.send(`
+		//cool banner
+		ws.send(
+`
 ╔══════════════════════════════════════════════╗
 ║ to connect to a server type /connect IP NICK ║
 ║ to disconnect from a server type /disconnect ║
 ║ type /list for a channel list                ║
+║ type /join channel to join a channel         ║
 ╚══════════════════════════════════════════════╝
 `);
 
@@ -43,104 +126,52 @@ function activate(context) {
 
 			//when user enters a message
 			ws.on('message', message => {
-
-				//if user connects to a IRC chat
-				if(message.toString().includes("/connect".toLowerCase())) {
-					ws.send(message)
-					//connect
-					var data = message.toString().split(" ")
-
-					nick = data[2];
-
-					ws.send("Connecting to " + data[1])
-					client = new irc.Client(data[1], data[2], {
-						channels: [], realName: "VScode IRC", stripColors: false
-					});
-
-					//when user gets registered to a new server
-					client.addListener('registered', function(message) {
-						ws.send("Connected")
-					});
-
-					//when server returns a motd
-					client.addListener('motd', function(motd) {
-						ws.send(motd)
-					});
-
-					//when server returns a topic
-					client.addListener('topic', function(channel, topic, nick, message) {
-						ws.send(nick + ' => ' + channel + ': ' + topic)
-					});
-
-					//when channelist starts to download
-					client.addListener('channellist_start', function(list) {
-						_channellist = Array()
-						ws.send("Downloading channellist")
-					});
-
-					//adding channelist listing to an array
-					client.addListener('channellist_item', function(listing) {
-						_channellist.push(listing);
-					});
-
-					//sorting and returning channelist when download is complete
-					client.addListener('channellist', function(list) {
-						_channellist.sort(function(a,b) {
-							return a["users"]-b["users"]
-						});
-
-						list = "";
-						_channellist.forEach(element => {
-							list += element["name"] + " : " + element["users"] + " : " + element["topic"] + "<br>"
-						});
-						ws.send(list);
-					});
-
-					//ignoring errors
-					client.addListener('error', function(message) {
-						//ws.send('error: ', message);
-					});
-
-					//returning message
-					client.addListener('message', function (from, to, message) {
-						ws.send(from + ' => ' + to + ': ' + message);
-					});
-				}
-
-
 				// 
 				// Handling commands
 				//
 
 				if(message.toString().charAt(0) == "/") {
+					let command = Command(message);
+
+					if(command[0].includes("/test")) {
+						ws.send("test message")
+					}
+
+					if(command[0].includes("/connect")) {
+						ws.send(message)
+
+						Connect(ws, command[2], command[1])
+					}
+
 					//if user wants to join a channel
-					if(message.toString().includes("/join".toLowerCase())) {
+					if(command[0].includes("/join")) {
 						ws.send(message)
 
 						//disconnecting from old channel
 						client.part(channel)
-						var data = message.toString().split(" ")
 
 						//joining new channel
-						client.join(data[1]);
-						channel = data[1];
+						client.join(command[1]);
+						channel = command[1];
 					}
 
 					//if user wants to disconnect from a server
-					if(message.toString().includes("/disconnect".toLowerCase())) {
+					if(command.includes("/disconnect")) {
 						//connect
 						ws.send(message)
 						client.disconnect();
 					}
 
 					//if user wants a channel list
-					if(message.toString().includes("/list".toLowerCase())) {
+					if(command.includes("/list")) {
+						ws.send(message)
 						client.list();
 					}
+					
 				} else {
 					ws.send(nick + ' => ' + channel + ': ' + message)
 					try {
-						client.say(channel, message.toString());
+						client.say(channel, message);
 					} catch {
 						ws.send("error: Try connecting to an irc chat first.")
 					}
@@ -177,7 +208,8 @@ function getWebviewContent() {
 				height: 97%;
 				top: 0px;
 				max-width: 100%;
-				word-wrap: break-word
+				word-wrap: break-word;
+				margin-left: 5px;
             }
         </style>
     </head>
@@ -188,7 +220,7 @@ function getWebviewContent() {
 
 				</div>
 			</pre>
-            <input type="text" id="terminalI" style="position: absolute; bottom: 0px; width: 100%; border: 0; outline: none; background-color: rgba(255, 0, 0, 0); color: white" value="">
+			<input type="text" id="terminalI" style="position: absolute; bottom: 0px; width: 100%; border: 0; outline: none; background-color: rgba(255, 0, 0, 0); color: white;" value="">
         </div>
     </body>
     <script>
