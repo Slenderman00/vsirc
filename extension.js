@@ -13,7 +13,7 @@ function Command(message) {
 	return arr; 
 }
 
-function Connect(ws, nick, ip) {
+function Connect(ws, ip) {
 	ws.send("Connecting to " + ip)
 	client = new irc.Client(ip, nick, {
 		channels: [], realName: "VScode IRC", stripColors: false
@@ -140,7 +140,9 @@ function activate(context) {
 					if(command[0].includes("/connect")) {
 						ws.send(message)
 
-						Connect(ws, command[2], command[1])
+						//pushing nick to var
+						nick = command[2];
+						Connect(ws, command[1])
 					}
 
 					//if user wants to join a channel
