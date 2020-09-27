@@ -2,6 +2,8 @@ const vscode = require('vscode');
 const WSS = require('ws').Server;
 const irc = require('irc');
 const { Server } = require('http');
+const { __promisify__ } = require('glob');
+const { updateForOf } = require('typescript');
 
 /*
  * @param {vscode.ExtensionContext} context
@@ -14,50 +16,50 @@ function Command(message) {
 }
 
 function Connect(ws, ip) {
-	ws.send("Connecting to " + ip)
+	send("Connecting to " + ip, ws)
 	client = new irc.Client(ip, nick, {
 		channels: [], realName: "VScode IRC", stripColors: false
 	});
 
 	//when user gets registered to a new server
 	client.addListener('registered', function(message) {
-		ws.send("Connected")
+		send("Connected", ws)
 	});
 
 	//when server returns a motd
 	client.addListener('motd', function(motd) {
-		ws.send(motd)
+		send(motd, ws)
 	});
 
 	//when server returns a topic
 	client.addListener('topic', function(channel, topic, nick, message) {
-		ws.send(nick + ' => ' + channel + ': ' + topic)
+		send(nick + ' => ' + channel + ': ' + topic, ws)
 	});
 
 	//pm
 	client.addListener('pm', function (from, message) {
-		ws.send(from + ' => ME: ' + message);
+		send(from + ' => ME: ' + message, ws);
 	});
 
 	//part
-	client.addListener('part', function (channel, nick, reason, message) {
-		ws.send(nick + " left " + channel + " for: " + reason);
+	client.addListener('part', function (nick, reason, channel, message) {
+		send(nick + " left " + channel + " for: " + reason, ws);
 	});
 
 	//quit
-	client.addListener('quit', function (channel, nick, reason, message) {
-		ws.send(nick + " left " + channel + " for: " + reason);
+	client.addListener('quit', function (nick, reason, channel, message) {
+		send(nick + " left " + channel + " for: " + reason, ws);
 	});
 
 	//quit
-	client.addListener('quit', function (channel, nick, reason, message) {
-		ws.send(nick + " was kicked from " + channel + " for: " + reason);
+	client.addListener('quit', function (nick, reason, channel, message) {
+		send(nick + " was kicked from " + channel + " for: " + reason, ws);
 	});
 
 	//when channelist starts to download
 	client.addListener('channellist_start', function(list) {
 		_channellist = Array()
-		ws.send("Downloading channellist")
+		send("Downloading channellist", ws)
 	});
 
 	//adding channelist listing to an array
@@ -75,7 +77,7 @@ function Connect(ws, ip) {
 		_channellist.forEach(element => {
 			list += element["name"] + " : " + element["users"] + " : " + element["topic"] + "<br>"
 		});
-		ws.send(list);
+		send(list, ws);
 	});
 
 	//ignoring errors
@@ -84,103 +86,144 @@ function Connect(ws, ip) {
 
 	//returning message
 	client.addListener('message', function (from, to, message) {
-		ws.send(from + ' => ' + to + ': ' + message);
+		send(from + ' => ' + to + ': ' + message, ws);
 	});
 }
 
 	//some global vars used by the client
+	let storageManager;
 	var client;
 	var channel = "";
 	var nick = "";
-	var _channellist;
+	var _channellist
+	var chat = []
+	var _port
+
+function randport() {
+	var num = 8050 + Math.floor(Math.random() * 100);
+	return num;
+}
 
 function activate(context) {
-
 	vscode.commands.registerCommand('IRC.start', () => {
 		const panel = vscode.window.createWebviewPanel(
 			'VSIRC',
 			'IRC CLIENT',
-			vscode.ViewColumn.One,
+			vscode.ViewColumn.Two,
 			{enableScripts: true}
 		);
 
+		_port = randport()
 		panel.webview.html = getWebviewContent();
 
 		//starting a websocket server
-		const wss = new WSS({ port: 8080 })
+		const wss = new WSS({ port: _port })
 
 		wss.on('connection', ws => {
+			start(ws, context);
+			fetch(ws);
+		})
+	})
+}
 
-		//cool banner
-		ws.send(
+function send(message, ws) {
+	ws.send(message)
+	chat.push(message)
+}
+
+function fetch(ws) {
+	chat.forEach(message => {
+		ws.send(message)
+	});
+}
+
+function start(ws, context) {
+	//cool banner
+	ws.send(
 `
 ╔══════════════════════════════════════════════╗
 ║ to connect to a server type /connect IP NICK ║
 ║ to disconnect from a server type /disconnect ║
 ║ type /list for a channel list                ║
 ║ type /join channel to join a channel         ║
+║ type /last to connect to last server         ║
 ╚══════════════════════════════════════════════╝
 `);
+	//when user enters a message
+	ws.on('message', message => {
+		// 
+		// Handling commands
+		//
 
+		if(message.toString().charAt(0) == "/") {
+			let command = Command(message);
 
+			if(command[0].includes("/test")) {
+				send(message, ws);
+				send("test message", ws);
+				fetch(ws)
+			}
 
-			//when user enters a message
-			ws.on('message', message => {
-				// 
-				// Handling commands
-				//
+			if(command[0].includes("/connect")) {
+				send(message, ws);
 
-				if(message.toString().charAt(0) == "/") {
-					let command = Command(message);
+				//pushing nick to var
+				nick = command[2];
+				Connect(ws, command[1])
 
-					if(command[0].includes("/test")) {
-						ws.send("test message")
-					}
+				context.globalState.update("ip", command[1]);				
+				context.globalState.update("nick", command[2]);
+			}
 
-					if(command[0].includes("/connect")) {
-						ws.send(message)
+			if(command[0].includes("/last")) { 
+				send(message, ws);
 
-						//pushing nick to var
-						nick = command[2];
-						Connect(ws, command[1])
-					}
+				nick = context.globalState.get('nick', '');
+				let ip = context.globalState.get('ip', '');
 
-					//if user wants to join a channel
-					if(command[0].includes("/join")) {
-						ws.send(message)
-
-						//disconnecting from old channel
-						client.part(channel)
-
-						//joining new channel
-						client.join(command[1]);
-						channel = command[1];
-					}
-
-					//if user wants to disconnect from a server
-					if(command.includes("/disconnect")) {
-						//connect
-						ws.send(message)
-						client.disconnect();
-					}
-
-					//if user wants a channel list
-					if(command.includes("/list")) {
-						ws.send(message)
-						client.list();
-					}
-					
+				if(ip == "" || nick == "") {
+					send("No last server", ws)
 				} else {
-					ws.send(nick + ' => ' + channel + ': ' + message)
-					try {
-						client.say(channel, message);
-					} catch {
-						ws.send("error: Try connecting to an irc chat first.")
-					}
+					Connect(ws, ip)
 				}
-			})
-		})
-	});
+			}
+
+
+			//if user wants to join a channel
+			if(command[0].includes("/join")) {
+				send(message, ws);
+				send("connecting to " + command[1], ws);
+
+				//disconnecting from old channel
+				client.part(channel)
+
+				//joining new channel
+				client.join(command[1]);
+				channel = command[1];
+			}
+
+			//if user wants to disconnect from a server
+			if(command.includes("/disconnect")) {
+				//connect
+				send(message, ws);
+				client.disconnect();
+			}
+
+			//if user wants a channel list
+			if(command.includes("/list")) {
+				send(message, ws);
+				client.list();
+			}
+			
+		} else {
+			send(nick + ' => ' + channel + ': ' + message, ws)
+			try {
+				client.say(channel, message);
+			} catch {
+				send("error: Try connecting to an irc chat first.", ws);
+			}
+		}
+	})
 }
 
 //returning faketerminal interface
@@ -226,13 +269,13 @@ function getWebviewContent() {
         </div>
     </body>
     <script>
-        const connection = new WebSocket('ws://localhost:8080')
+        const connection = new WebSocket('ws://localhost:` + _port + `')
 
         terminal = document.getElementById("terminal")
 
         connection.onmessage = e => {
 			message = e.data
-			var reg = /([#][a-zA-Z0-9\d\\-\\_\\.\\|\\=\\!\\+\\#\\'\\[\\]\\/]+) /g;
+			var reg = /([#][a-zA-Z0-9\d\\-\\_\\.\\|\\=\\:\\?\\-\\\\!\\*\\(\\)\\+\\#\\'\\[\\]\\/]+) /g;
 			matches = message.match(reg)
 			if(Array.isArray(matches)) {
 				matches.forEach(match => {

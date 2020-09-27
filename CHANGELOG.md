@@ -15,3 +15,9 @@ All notable changes to the "vsirc" extension will be documented in this file.
 
 - Overhaled command system
 - Implemented more events
+
+## [1.0.5]
+
+- Implemented the last command
+- fixed nickname glitch
+- added text persitance
