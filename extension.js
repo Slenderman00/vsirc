@@ -1,13 +1,6 @@
 const vscode = require('vscode');
 const WSS = require('ws').Server;
 const irc = require('irc');
-const { Server } = require('http');
-const { __promisify__ } = require('glob');
-const { updateForOf } = require('typescript');
-
-/*
- * @param {vscode.ExtensionContext} context
- */
 
 function Command(message) {
 	let arr = message.toString().split(" ");
@@ -91,13 +84,12 @@ function Connect(ws, ip) {
 }
 
 	//some global vars used by the client
-	let storageManager;
 	var client;
 	var channel = "";
 	var nick = "";
-	var _channellist
-	var chat = []
-	var _port
+	var _channellist;
+	var chat = [];
+	var _port;
 
 function randport() {
 	var num = 8050 + Math.floor(Math.random() * 100);
@@ -105,7 +97,7 @@ function randport() {
 }
 
 function activate(context) {
-	vscode.commands.registerCommand('IRC.start', () => {
+	vscode.commands.registerCommand('VSIRC.start', () => {
 		const panel = vscode.window.createWebviewPanel(
 			'VSIRC',
 			'IRC CLIENT',
@@ -161,7 +153,6 @@ function start(ws, context) {
 			if(command[0].includes("/test")) {
 				send(message, ws);
 				send("test message", ws);
-				fetch(ws)
 			}
 
 			if(command[0].includes("/connect")) {

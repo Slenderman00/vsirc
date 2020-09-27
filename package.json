@@ -2,7 +2,7 @@
 	"name": "vsirc",
 	"displayName": "VSIRC",
 	"description": "IRC for visualt studio",
-	"version": "1.0.6",
+	"version": "1.0.8",
 	"publisher": "slenderman00",
 	"repository": "https://github.com/Slenderman00/vsirc",
 	"icon": "logo.png",
@@ -13,14 +13,14 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:IRC.start"
+		"onCommand:VSIRC.start"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "IRC.start",
-				"title": "Open IRC client"
+				"command": "VSIRC.start",
+				"title": "VSIRC: Open"
 			}
 		]
 	},
