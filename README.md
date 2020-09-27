@@ -40,3 +40,7 @@ Add a shit ton of more commands
 - Implemented the last command
 - fixed nickname glitch
 - added text persitance
+
+## [1.0.6]
+
+- Fixed fatal flaw

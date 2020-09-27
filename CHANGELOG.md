@@ -21,3 +21,7 @@ All notable changes to the "vsirc" extension will be documented in this file.
 - Implemented the last command
 - fixed nickname glitch
 - added text persitance
+
+## [1.0.6]
+
+- Fixed fatal flaw
