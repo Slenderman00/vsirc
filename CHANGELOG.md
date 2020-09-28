@@ -25,3 +25,9 @@ All notable changes to the "vsirc" extension will be documented in this file.
 ## [1.0.6]
 
 - Fixed fatal flaw
+
+## [1.0.9]
+
+- Implemented more events
+- Non-command commands will now be treated as messages
+- Fixed quit, leave and kick messages

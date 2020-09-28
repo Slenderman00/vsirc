@@ -11,7 +11,7 @@ function Command(message) {
 function Connect(ws, ip) {
 	send("Connecting to " + ip, ws)
 	client = new irc.Client(ip, nick, {
-		channels: [], realName: "VScode IRC", stripColors: false
+		channels: [], realName: "VSIRC", stripColors: false
 	});
 
 	//when user gets registered to a new server
@@ -29,24 +29,19 @@ function Connect(ws, ip) {
 		send(nick + ' => ' + channel + ': ' + topic, ws)
 	});
 
-	//pm
-	client.addListener('pm', function (from, message) {
-		send(from + ' => ME: ' + message, ws);
-	});
-
 	//part
-	client.addListener('part', function (nick, reason, channel, message) {
+	client.addListener('part', function (channel, nick, reason, message) {
 		send(nick + " left " + channel + " for: " + reason, ws);
 	});
 
 	//quit
-	client.addListener('quit', function (nick, reason, channel, message) {
-		send(nick + " left " + channel + " for: " + reason, ws);
+	client.addListener('quit', function (nick, reason, channels, message) {
+		send(nick + " left for: " + reason, ws);
 	});
 
-	//quit
-	client.addListener('quit', function (nick, reason, channel, message) {
-		send(nick + " was kicked from " + channel + " for: " + reason, ws);
+	//kick
+	client.addListener('kick', function (channel, nick, by, reason, message) {
+		send(nick + " was kicked from" + channel + " by " + by +  "for: " + reason, ws);
 	});
 
 	//when channelist starts to download
@@ -148,17 +143,21 @@ function start(ws, context) {
 		//
 
 		if(message.toString().charAt(0) == "/") {
+			let flag = true;
+
 			let command = Command(message);
 
 			if(command[0].includes("/test")) {
+				flag = false;
 				send(message, ws);
 				send("test message", ws);
 			}
 
 			if(command[0].includes("/connect")) {
+				flag = false;
 				send(message, ws);
 
-				//pushing nick to var
+				//pushing nick to global var
 				nick = command[2];
 				Connect(ws, command[1])
 
@@ -167,6 +166,7 @@ function start(ws, context) {
 			}
 
 			if(command[0].includes("/last")) { 
+				flag = false;
 				send(message, ws);
 
 				nick = context.globalState.get('nick', '');
@@ -182,6 +182,7 @@ function start(ws, context) {
 
 			//if user wants to join a channel
 			if(command[0].includes("/join")) {
+				flag = false;
 				send(message, ws);
 				send("connecting to " + command[1], ws);
 
@@ -195,6 +196,7 @@ function start(ws, context) {
 
 			//if user wants to disconnect from a server
 			if(command.includes("/disconnect")) {
+				flag = false;
 				//connect
 				send(message, ws);
 				client.disconnect();
@@ -202,8 +204,14 @@ function start(ws, context) {
 
 			//if user wants a channel list
 			if(command.includes("/list")) {
+				flag = false;
 				send(message, ws);
 				client.list();
+			}
+
+			if(flag) {
+				send(nick + ' => ' + channel + ': ' + message, ws)
+				client.say(channel, message);
 			}
 			
 		} else {
@@ -219,8 +227,10 @@ function start(ws, context) {
 
 //returning faketerminal interface
 function getWebviewContent() {
+
+	// move content to external html
 	return `<!--
-    Todo: beutyfy HTML and JS
+    Todo: Redo
 -->
 <!doctype html>
 <html>
@@ -266,7 +276,7 @@ function getWebviewContent() {
 
         connection.onmessage = e => {
 			message = e.data
-			var reg = /([#][a-zA-Z0-9\d\\-\\_\\.\\|\\=\\:\\?\\-\\\\!\\*\\(\\)\\+\\#\\'\\[\\]\\/]+) /g;
+			var reg = /([#][a-zA-Z0-9\d\\-\\_\\.\\|\\=\\?\\-\\\\!\\*\\(\\)\\+\\#\\'\\[\\]\\/]+) /g;
 			matches = message.match(reg)
 			if(Array.isArray(matches)) {
 				matches.forEach(match => {

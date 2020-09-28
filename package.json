@@ -2,7 +2,7 @@
 	"name": "vsirc",
 	"displayName": "VSIRC",
 	"description": "IRC for visualt studio",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"publisher": "slenderman00",
 	"repository": "https://github.com/Slenderman00/vsirc",
 	"icon": "logo.png",
